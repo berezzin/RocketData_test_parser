@@ -2,7 +2,23 @@ from bs4 import BeautifulSoup
 import requests
 import json
 
-urls = ['', 'https://www.ziko.pl/lokalizator/', '']
+urls = ['https://api.kfc.com/api/store/v2/store.get_restaurants?showClosed=true',
+        'https://www.ziko.pl/lokalizator/',
+        '']
+
+def first_parser(url):
+    req = requests.get(url).json()
+    items = req['searchResults']
+    for item in items:
+        address = item['storePublic']['contacts']['streetAddress']['ru']
+        latlon = item['storePublic']['contacts']['coordinates']['geometry']['coordinates']
+        phones = item['storePublic']['contacts']['phoneNumber']
+        if item['storePublic']['status'] == 'Closed':
+            working_hours = 'Closed'
+        else:
+            working_hours = item['storePublic']['openingHours']['regularDaily']
+
+
 
 
 def second_parser(url):
@@ -66,4 +82,5 @@ def second_parser(url):
 
 
 if __name__ == '__main__':
-    second_parser(urls[1])
+    first_parser(urls[0])
+    # second_parser(urls[1])
