@@ -7,16 +7,47 @@ urls = ['https://api.kfc.com/api/store/v2/store.get_restaurants?showClosed=true'
         '']
 
 def first_parser(url):
+    print('Начался парсинг первого сайта')
     req = requests.get(url).json()
     items = req['searchResults']
+
+    data_to_export = []
     for item in items:
-        address = item['storePublic']['contacts']['streetAddress']['ru']
-        latlon = item['storePublic']['contacts']['coordinates']['geometry']['coordinates']
-        phones = item['storePublic']['contacts']['phoneNumber']
-        if item['storePublic']['status'] == 'Closed':
-            working_hours = 'Closed'
-        else:
-            working_hours = item['storePublic']['openingHours']['regularDaily']
+        try:
+            try:
+                address = item['storePublic']['contacts']['streetAddress']['ru'].split(', ', maxsplit=1).pop(1)
+            except:
+                address = item['storePublic']['contacts']['streetAddress']['en'].split(', ', maxsplit=1).pop(1)
+            latlon = item['storePublic']['contacts']['coordinates']['geometry']['coordinates']
+            phones = item['storePublic']['contacts']['phoneNumber']
+            working_hours = []
+            if item['storePublic']['status'] == 'Closed':
+                working_hours.append('Closed')
+            elif item['storePublic']['openingHours']['regularDaily'] is not None:
+                working_hours_list = item['storePublic']['openingHours']['regularDaily']
+                for day in working_hours_list:
+                    working_hours_by_day = day['weekDayName'] + ' ' + day['timeFrom'].removesuffix(':00') + ' - ' + day['timeTill'].removesuffix(':00')
+                    working_hours.append(working_hours_by_day)
+            else:
+                working_hours.append('Closed')
+            name = item['storePublic']['title']['ru']
+            data = {
+                "address": address,
+                "latlon": latlon,
+                "name": name,
+                "phones": phones,
+                "working_hours": working_hours
+            }
+
+            data_to_export.append(data)
+        except Exception as err:
+            print(err)
+
+    with open(f"parsing_data/first_site.json", 'w', encoding='utf-8') as file:
+        json.dump(data_to_export, file, indent=4, ensure_ascii=False)
+
+    print('Парсинг первого сайта завершён, данные доступны в папке parsing_data')
+
 
 
 
@@ -83,4 +114,4 @@ def second_parser(url):
 
 if __name__ == '__main__':
     first_parser(urls[0])
-    # second_parser(urls[1])
+    second_parser(urls[1])
